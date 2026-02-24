@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Bell, X } from "lucide-react";
+import { Search, X } from "lucide-react";
 
 interface NetflixNavProps {
   onSearch?: (query: string) => void;
@@ -52,11 +52,10 @@ export default function NetflixNav({ onSearch, searchQuery = "" }: NetflixNavPro
         backdropFilter: scrolled ? "blur(4px)" : "none",
       }}
     >
-      {/* Logo */}
+      {/* Logo + nav links */}
       <div className="flex items-center gap-10">
         <button
           onClick={() => router.push("/browse")}
-          className="flex-shrink-0"
           style={{ background: "none", border: "none", cursor: "pointer" }}
         >
           <span
@@ -72,19 +71,15 @@ export default function NetflixNav({ onSearch, searchQuery = "" }: NetflixNavPro
           </span>
         </button>
 
-        {/* Nav links */}
         <div className="hidden md:flex items-center gap-6">
           {[
-            { label: "Home", href: "/browse" },
-            { label: "About", href: "/about" },
+            { label: "Home",   href: "/browse" },
+            { label: "About",  href: "/about" },
             { label: "GitHub", href: "https://github.com/ethanfalik", external: true },
           ].map((link) => (
             <button
               key={link.label}
-              onClick={() => {
-                if (link.external) window.open(link.href, "_blank");
-                else router.push(link.href);
-              }}
+              onClick={() => link.external ? window.open(link.href, "_blank") : router.push(link.href)}
               className="text-sm text-[#e5e5e5] hover:text-white transition-colors duration-150"
               style={{ background: "none", border: "none", cursor: "pointer" }}
             >
@@ -94,60 +89,38 @@ export default function NetflixNav({ onSearch, searchQuery = "" }: NetflixNavPro
         </div>
       </div>
 
-      {/* Right icons */}
+      {/* Right side — search + profile avatar */}
       <div className="flex items-center gap-4">
-        {/* Search */}
-        <div className="flex items-center gap-2">
-          {searchOpen ? (
-            <div className="flex items-center gap-2 border border-white/60 bg-black/80 px-3 py-1.5 animate-fadeIn">
-              <Search size={16} className="text-white flex-shrink-0" />
-              <input
-                id="nav-search-input"
-                type="text"
-                value={inputValue}
-                onChange={handleSearchChange}
-                placeholder="Titles, genres, tech..."
-                className="bg-transparent text-white text-sm outline-none w-48 placeholder:text-white/40"
-              />
-              <button onClick={closeSearch}>
-                <X size={16} className="text-white/60 hover:text-white" />
-              </button>
-            </div>
-          ) : (
-            <button onClick={openSearch} className="text-white hover:text-white/80 transition-colors">
-              <Search size={20} />
+        {searchOpen ? (
+          <div className="flex items-center gap-2 border border-white/60 bg-black/80 px-3 py-1.5 animate-fadeIn">
+            <Search size={15} className="text-white flex-shrink-0" />
+            <input
+              id="nav-search-input"
+              type="text"
+              value={inputValue}
+              onChange={handleSearchChange}
+              placeholder="Titles, genres, tech..."
+              className="bg-transparent text-white text-sm outline-none w-48 placeholder:text-white/40"
+            />
+            <button onClick={closeSearch}>
+              <X size={15} className="text-white/60 hover:text-white" />
             </button>
-          )}
-        </div>
+          </div>
+        ) : (
+          <button onClick={openSearch} className="text-white hover:text-white/70 transition-colors">
+            <Search size={19} />
+          </button>
+        )}
 
-        {/* Bell */}
-        <button className="text-white hover:text-white/80 transition-colors">
-          <Bell size={20} />
-        </button>
-
-        {/* Profile avatar */}
-        <button
-          onClick={() => router.push("/profiles")}
-          className="flex-shrink-0"
-        >
-          <div
-            className="w-8 h-8 rounded-sm overflow-hidden"
-            style={{ background: "#8B0000" }}
-          >
+        {/* Profile avatar — goes back to profile select */}
+        <button onClick={() => router.push("/profiles")} className="flex-shrink-0">
+          <div className="w-8 h-8 rounded-sm overflow-hidden" style={{ background: "#1a1a1a" }}>
             <svg viewBox="0 0 32 32" fill="none" className="w-full h-full">
-              <rect width="32" height="32" fill="#8B0000" />
-              <rect x="6" y="9" width="20" height="13" rx="1.5" stroke="rgba(255,255,255,0.9)" strokeWidth="1.5" />
-              <polyline
-                points="10,18 14,14 10,10"
-                stroke="rgba(255,255,255,0.9)"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                fill="none"
-              />
-              <line x1="15" y1="18" x2="20" y2="18" stroke="rgba(255,255,255,0.9)" strokeWidth="1.5" strokeLinecap="round" />
-              <rect x="13" y="22" width="6" height="2" fill="rgba(255,255,255,0.9)" />
-              <line x1="9" y1="24" x2="23" y2="24" stroke="rgba(255,255,255,0.9)" strokeWidth="1.5" strokeLinecap="round" />
+              <rect width="32" height="32" fill="#1a1a1a" />
+              {/* </> in small */}
+              <polyline points="9.5,12 5,16 9.5,20" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.85" />
+              <polyline points="22.5,12 27,16 22.5,20" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" opacity="0.85" />
+              <line x1="20" y1="10" x2="12" y2="22" stroke="white" strokeWidth="1.5" strokeLinecap="round" opacity="0.85" />
             </svg>
           </div>
         </button>

@@ -113,51 +113,9 @@ export default function BrowsePage() {
           </div>
 
           {/* Footer */}
-          <footer className="px-16 py-12 mt-8">
-            <div className="flex items-center gap-4 mb-6">
-              {["Facebook", "Instagram", "YouTube", "Twitter"].map((icon) => (
-                <div
-                  key={icon}
-                  className="w-6 h-6 opacity-70 hover:opacity-100 cursor-pointer transition-opacity"
-                >
-                  <svg viewBox="0 0 24 24" fill="white" className="w-full h-full">
-                    <rect width="24" height="24" rx="4" fill="none" />
-                    <text x="50%" y="50%" dominantBaseline="middle" textAnchor="middle" fontSize="10" fill="white">{icon[0]}</text>
-                  </svg>
-                </div>
-              ))}
-            </div>
-            <div
-              className="grid gap-3 mb-6 text-xs"
-              style={{
-                gridTemplateColumns: "repeat(4, 1fr)",
-                color: "#808080",
-              }}
-            >
-              {[
-                "Audio Description",
-                "Help Centre",
-                "Gift Cards",
-                "Media Centre",
-                "Investor Relations",
-                "Jobs",
-                "Terms of Use",
-                "Privacy",
-                "Legal Notices",
-                "Cookie Preferences",
-                "Corporate Information",
-                "Contact Us",
-              ].map((item) => (
-                <span
-                  key={item}
-                  className="hover:underline cursor-pointer text-[#808080] hover:text-[#e5e5e5] transition-colors"
-                >
-                  {item}
-                </span>
-              ))}
-            </div>
+          <footer className="px-16 py-12 mt-8 border-t border-white/5">
             <p className="text-[#808080] text-xs">
-              ethanfa.com · Tel Aviv, Israel
+              ethanfa.com · Ethan Falik · Tel Aviv, Israel
             </p>
           </footer>
         </>

@@ -21,7 +21,7 @@ export const projects: Project[] = [
     thumbnail: {
       gradient: "from-orange-950 via-red-950 to-black",
       accent: "#E25822",
-      icon: "🦀",
+      icon: "R+",
       bgClass: "bg-gradient-to-br from-orange-950 via-red-950 to-black",
     },
     matchScore: 99,
@@ -47,7 +47,7 @@ export const projects: Project[] = [
     thumbnail: {
       gradient: "from-blue-950 via-violet-950 to-black",
       accent: "#6366F1",
-      icon: "∑",
+      icon: "C01",
       bgClass: "bg-gradient-to-br from-blue-950 via-violet-950 to-black",
     },
     matchScore: 97,
@@ -73,7 +73,7 @@ export const projects: Project[] = [
     thumbnail: {
       gradient: "from-purple-950 via-pink-950 to-black",
       accent: "#EC4899",
-      icon: "😊",
+      icon: "ER",
       bgClass: "bg-gradient-to-br from-purple-950 via-pink-950 to-black",
     },
     matchScore: 95,
@@ -97,7 +97,7 @@ export const projects: Project[] = [
     thumbnail: {
       gradient: "from-teal-950 via-cyan-950 to-black",
       accent: "#14B8A6",
-      icon: "🤟",
+      icon: "SL",
       bgClass: "bg-gradient-to-br from-teal-950 via-cyan-950 to-black",
     },
     matchScore: 0,
