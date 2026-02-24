@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 const CALC01_URL = process.env.CALC01_URL || "https://placeholder.workers.dev";
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const hostname = request.headers.get("host") || "";
 
   // Extract subdomain: "calc01.ethanfa.com" → "calc01"
