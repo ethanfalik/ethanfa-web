@@ -4,173 +4,140 @@ import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import gsap from "gsap";
 
-const MAX_STRANDS = 18;
-
-// Deterministic strand palette — all reds with variation
-const STRAND_COLORS = [
-  "#FF3333", "#E50914", "#CC0011", "#FF5533", "#DD1122",
-  "#BB0808", "#FF4422", "#EE2222", "#AA0000", "#FF6644",
-  "#CC2200", "#FF2244", "#DD0000", "#EE4433", "#FF4400",
-  "#CC1100", "#EE1111", "#DD3322",
+// ─── Letter geometry (Bebas Neue at font-size 200, viewBox 660×220) ──────────
+// Widths are measured estimates; tweak if letters overlap/gap too much
+const LETTERS: { id: string; x: number }[] = [
+  { id: "E", x: 8   },
+  { id: "T", x: 118 },
+  { id: "H", x: 228 },
+  { id: "A", x: 366 },
+  { id: "N", x: 498 },
 ];
 
-// Pre-computed, deterministic per-strand properties
-const STRANDS = Array.from({ length: MAX_STRANDS }, (_, i) => ({
-  color: STRAND_COLORS[i],
-  // Slight non-uniform jitter for organic spacing, no Math.random
-  frac: (i / (MAX_STRANDS - 1) - 0.5) * (1 + Math.sin(i * 2.1) * 0.1),
-  widthMult: 0.55 + 0.45 * Math.abs(Math.sin(i * 1.7)),
-}));
+const PRIMARY = "#E50914";
+const FONT = "'Bebas Neue', Impact, 'Arial Black', sans-serif";
 
 export default function Intro() {
   const router = useRouter();
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const canvas = canvasRef.current!;
-    const ctx = canvas.getContext("2d")!;
-
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-
-    const W = canvas.width;
-    const H = canvas.height;
-    const cx = W / 2;
-    const cy = H / 2;
-
-    // E geometry — large, centered
-    const eH = H * 0.60;
-    const eW = eH * 0.52;
-    const T  = cy - eH / 2;
-    const B  = cy + eH / 2;
-    const L  = cx - eW / 2;
-    const R  = cx + eW / 2;
-    const M  = cy;
-    const MR = L + eW * 0.70; // middle bar is shorter
-
-    // Stroke segments in natural draw order
-    const SEGS: [number, number, number, number][] = [
-      [L, T, L, B],   // ① vertical bar (top → bottom)
-      [L, T, R, T],   // ② top bar
-      [L, M, MR, M],  // ③ middle bar
-      [L, B, R, B],   // ④ bottom bar
-    ];
-
-    const SEG_LENS  = SEGS.map(([x1,y1,x2,y2]) => Math.hypot(x2-x1, y2-y1));
-    const TOTAL_LEN = SEG_LENS.reduce((a, b) => a + b, 0);
-    const SEG_FRACS = SEG_LENS.map(l => l / TOTAL_LEN);
-
-    // All animated values live in one plain object — GSAP tweens them directly
-    const v = {
-      drawT:   0,   // 0 = nothing, 1 = E fully drawn
-      zoom:    1,
-      strandN: 1,   // active strand count
-      spread:  0,   // perpendicular strand spread (logical px)
-      strokeW: 52,  // base stroke width shared across strands
-      fade:    0,   // black overlay (0 = clear, 1 = black)
-    };
-
-    function frame() {
-      ctx.clearRect(0, 0, W, H);
-      ctx.fillStyle = "#000";
-      ctx.fillRect(0, 0, W, H);
-
-      if (v.drawT > 0) {
-        ctx.save();
-
-        // Zoom centered on the E
-        ctx.translate(cx, cy);
-        ctx.scale(v.zoom, v.zoom);
-        ctx.translate(-cx, -cy);
-
-        const n     = Math.max(1, Math.round(v.strandN));
-        const baseW = Math.max(0.8, v.strokeW / n);
-
-        for (let i = 0; i < n; i++) {
-          const strand = STRANDS[i % MAX_STRANDS];
-          const offset = (n === 1 ? 0 : strand.frac) * v.spread;
-          const lw     = baseW * (n === 1 ? 1 : strand.widthMult);
-
-          ctx.strokeStyle = n === 1 ? "#E50914" : strand.color;
-          ctx.lineWidth   = lw;
-          ctx.lineCap     = "round";
-
-          let rem = v.drawT;
-          for (let seg = 0; seg < SEGS.length; seg++) {
-            if (rem <= 0) break;
-            const frac = SEG_FRACS[seg];
-            const t    = Math.min(1, rem / frac);
-            rem -= frac;
-
-            const [x1, y1, x2, y2] = SEGS[seg];
-            const len = Math.hypot(x2 - x1, y2 - y1);
-            // Perpendicular unit vector for strand offset
-            const px = -(y2 - y1) / len;
-            const py =  (x2 - x1) / len;
-
-            ctx.beginPath();
-            ctx.moveTo(x1 + px * offset,              y1 + py * offset);
-            ctx.lineTo(x1 + (x2-x1)*t + px * offset, y1 + (y2-y1)*t + py * offset);
-            ctx.stroke();
-          }
-        }
-
-        ctx.restore();
-      }
-
-      // Fade-to-black overlay
-      if (v.fade > 0) {
-        ctx.fillStyle = `rgba(0,0,0,${v.fade})`;
-        ctx.fillRect(0, 0, W, H);
-      }
-    }
-
-    let raf: number;
-    const loop = () => { frame(); raf = requestAnimationFrame(loop); };
-    loop();
-
-    const tl = gsap.timeline({
-      onComplete: () => { cancelAnimationFrame(raf); router.push("/profiles"); },
+    // ── Initial state ────────────────────────────────────────────────────────
+    LETTERS.forEach(({ id }) => {
+      // Base starts squished to zero height (grows upward on reveal)
+      gsap.set(`#base-${id}`, { scaleY: 0, transformOrigin: "50% 100%" });
+      // Shadow starts fully opaque
+      gsap.set(`#shadow-${id}`, { opacity: 1 });
     });
 
-    // ── Phase 1: Draw the E quickly ──────────────────────────────
-    tl.to(v, { drawT: 1, duration: 0.52, ease: "power2.inOut" }, 0.25);
+    const tl = gsap.timeline({
+      onComplete: () => router.push("/profiles"),
+    });
 
-    // ── Phase 2: Un-draw + zoom in + strands multiply ────────────
-    // drawT uses power4.in: stays near 1 for most of the phase,
-    // then retracts fast at the very end — so strands are visible
-    // up close for a long time before disappearing
-    tl.to(v, {
-      drawT: 0,
-      duration: 2.3,
-      ease: "power4.in",
-    }, 0.95);
+    // ── Per-letter animation (staggered) ────────────────────────────────────
+    // Mirrors the CodePen: base scales in, shadow fades out
+    LETTERS.forEach(({ id }, i) => {
+      const t = i * 0.16;
 
-    tl.to(v, {
-      zoom:    28,
-      strandN: MAX_STRANDS,
-      spread:  36,
-      strokeW: 7,
-      duration: 2.3,
-      ease: "power2.in",
-    }, 0.95);
+      // Base letter grows upward from baseline
+      tl.to(
+        `#base-${id}`,
+        { scaleY: 1, duration: 0.24, ease: "power3.out", transformOrigin: "50% 100%" },
+        t,
+      );
 
-    // ── Phase 3: Fade to black (overlaps with end of phase 2) ────
-    tl.to(v, { fade: 1, duration: 0.55, ease: "power2.in" }, 2.65);
+      // Shadow gradient fades away, revealing bright red letter
+      tl.to(
+        `#shadow-${id}`,
+        { opacity: 0, duration: 0.82, ease: "power2.inOut" },
+        t + 0.06,
+      );
+    });
 
-    return () => { tl.kill(); cancelAnimationFrame(raf); };
+    // ── Hold then fade out ───────────────────────────────────────────────────
+    const lastEnd = (LETTERS.length - 1) * 0.16 + 0.82 + 0.06;
+    tl.to({}, { duration: 0.5 }, lastEnd)
+      .to(wrapRef.current, { opacity: 0, duration: 0.45, ease: "power2.inOut" });
+
+    return () => { tl.kill(); };
   }, [router]);
 
   return (
-    <canvas
-      ref={canvasRef}
+    <div
+      ref={wrapRef}
       style={{
         position: "fixed",
         inset: 0,
         background: "#000",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
         zIndex: 9999,
-        display: "block",
       }}
-    />
+    >
+      <svg
+        viewBox="0 0 660 220"
+        style={{ width: "min(90vw, 860px)", overflow: "visible" }}
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <defs>
+          {/*
+           * Per-letter shadow gradient:
+           * dark/opaque at the BOTTOM of each letter (offset 0% = y1 = bottom),
+           * transparent at the TOP (offset 100% = y2 = top).
+           * This replicates the CodePen's shadow-start / shadow-end stops.
+           */}
+          {LETTERS.map(({ id }) => (
+            <linearGradient
+              key={id}
+              id={`grad-${id}`}
+              x1="0"
+              y1="1"
+              x2="0"
+              y2="0"
+              gradientUnits="objectBoundingBox"
+            >
+              {/* shadow-start: dark, opaque (bottom) */}
+              <stop offset="0%"   stopColor="black" stopOpacity={0.65} />
+              {/* shadow-end: transparent (top) */}
+              <stop offset="100%" stopColor="black" stopOpacity={0}    />
+            </linearGradient>
+          ))}
+        </defs>
+
+        {LETTERS.map(({ id, x }) => (
+          <g key={id}>
+            {/* ── Base (bright red, grows upward on reveal) ── */}
+            <text
+              id={`base-${id}`}
+              x={x}
+              y={205}
+              fontSize={200}
+              fontFamily={FONT}
+              fontWeight={900}
+              fill={PRIMARY}
+              style={{ transformBox: "fill-box", transformOrigin: "50% 100%" }}
+            >
+              {id}
+            </text>
+
+            {/* ── Shadow (dark gradient, fades to 0 on reveal) ── */}
+            <text
+              id={`shadow-${id}`}
+              x={x}
+              y={205}
+              fontSize={200}
+              fontFamily={FONT}
+              fontWeight={900}
+              fill={`url(#grad-${id})`}
+              style={{ pointerEvents: "none" }}
+            >
+              {id}
+            </text>
+          </g>
+        ))}
+      </svg>
+    </div>
   );
 }
