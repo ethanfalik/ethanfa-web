@@ -51,22 +51,21 @@ export default function Intro() {
 
     // ── Diagonal — sweeps top → bottom (t = 0 → 1) ──────────────────────────
     // Parallelogram: TL=(nX,nY)  TR=(nX+sw,nY)  BR=(nX+nW,nY+nH)  BL=(nX+nW−sw,nY+nH)
-    // Gradient runs along the face of the ribbon (bright center, dark near the
-    // fold where it peels away from the left stroke).
     function drawDiag(t: number) {
       if (t <= 0) return;
       ctx.save();
-      // Horizontal band clip — reveals the parallelogram from top to bottom
       ctx.beginPath();
       ctx.rect(0, nY, W, nH * t + sw * 0.4);
       ctx.clip();
 
-      // Gradient across the diagonal width (NW→SE, mimicking rotation:135 in .pen)
-      const g = ctx.createLinearGradient(nX, nY, nX + sw, nY + nH * 0.08);
-      g.addColorStop(0,    "#E50914");
-      g.addColorStop(0.30, "#C00810");
-      g.addColorStop(0.62, "#6E0000");   // dark fold crease
-      g.addColorStop(1.0,  "#220000");
+      // Horizontal gradient: dark fold on left (meets left stroke) → bright face → darker right edge
+      const g = ctx.createLinearGradient(nX, 0, nX + nW, 0);
+      g.addColorStop(0,    "#1A0000");
+      g.addColorStop(0.12, "#8A0808");
+      g.addColorStop(0.28, "#E50914");
+      g.addColorStop(0.62, "#C80810");
+      g.addColorStop(0.85, "#8A0000");
+      g.addColorStop(1.0,  "#4A0000");
       ctx.fillStyle = g;
       ctx.beginPath();
       ctx.moveTo(nX,           nY);
@@ -78,14 +77,15 @@ export default function Intro() {
       ctx.restore();
     }
 
-    // ── Right stroke — wipes downward (t = 0 → 1) ───────────────────────────
-    // Mirror of the left stroke: bright front face on the left, shadow on right.
+    // ── Right stroke — wipes upward from bottom (t = 0 → 1) ─────────────────
+    // Grows from where the diagonal lands (base of N) up to full height.
     function drawRight(t: number) {
       if (t <= 0) return;
       const rx = nX + nW - sw;
+      const revealH = nH * t;
       ctx.save();
       ctx.beginPath();
-      ctx.rect(rx, nY, sw, nH * t);
+      ctx.rect(rx, nY + nH - revealH, sw, revealH);
       ctx.clip();
       const g = ctx.createLinearGradient(rx, 0, rx + sw, 0);
       g.addColorStop(0,    "#FF2222");
@@ -127,22 +127,6 @@ export default function Intro() {
       ctx.restore();
     }
 
-    // ── Ground shadow ellipse beneath the N ──────────────────────────────────
-    function drawShadow(alpha: number) {
-      if (alpha <= 0) return;
-      const sy = nY + nH + nH * 0.045;
-      ctx.save();
-      ctx.globalAlpha = alpha * 0.5;
-      const sg = ctx.createRadialGradient(nCX, sy, 0, nCX, sy, nW * 0.58);
-      sg.addColorStop(0, "rgba(229,9,20,0.6)");
-      sg.addColorStop(1, "rgba(0,0,0,0)");
-      ctx.fillStyle = sg;
-      ctx.beginPath();
-      ctx.ellipse(nCX, sy, nW * 0.58, nH * 0.065, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-    }
-
     // ── Animation state ──────────────────────────────────────────────────────
     const v = {
       leftReveal:  0,
@@ -150,7 +134,6 @@ export default function Intro() {
       rightReveal: 0,
       creaseAlpha: 0,
       glowLevel:   0,
-      shadowAlpha: 0,
       zoom:        1,
       fadeOut:     0,
     };
@@ -167,7 +150,6 @@ export default function Intro() {
 
       // Draw order: glow behind N, then strokes on top, crease last
       drawGlow(v.glowLevel);
-      drawShadow(v.shadowAlpha);
       drawDiag(v.diagReveal);
       drawLeft(v.leftReveal);
       drawRight(v.rightReveal);
@@ -192,29 +174,23 @@ export default function Intro() {
     });
 
     // Phase 1 — Left stroke rises from below (0 → 0.65s)
-    tl.to(v, { leftReveal: 1,  duration: 0.65, ease: "power3.inOut" }, 0);
+    tl.to(v, { leftReveal: 1, duration: 0.65, ease: "power3.inOut" }, 0);
 
-    // Phase 2 — Diagonal sweeps down, right stroke follows (0.2 → 1.15s)
-    tl.to(v, { diagReveal:  1, duration: 0.80, ease: "power2.inOut" }, 0.20);
-    tl.to(v, { rightReveal: 1, duration: 0.65, ease: "power3.out"   }, 0.50);
+    // Phase 2 — Diagonal sweeps down (0.15s), right stroke grows up from base (0.45s)
+    tl.to(v, { diagReveal:  1, duration: 0.80, ease: "power2.inOut" }, 0.15);
+    tl.to(v, { rightReveal: 1, duration: 0.65, ease: "power3.out"   }, 0.45);
 
-    // Crease shadow materialises with the strokes
-    tl.to(v, { creaseAlpha: 1, duration: 0.35, ease: "power2.out"   }, 0.58);
+    // Crease shadow locks in as strokes meet
+    tl.to(v, { creaseAlpha: 1, duration: 0.30, ease: "power2.out" }, 0.55);
 
-    // Phase 3 — Glow and ground shadow build (0.9 → 1.5s)
-    tl.to(v, { shadowAlpha: 1, duration: 0.45, ease: "power2.out"   }, 0.90);
-    tl.to(v, { glowLevel:   1, duration: 0.55, ease: "power2.out"   }, 0.90);
+    // Phase 3 — Glow builds as N completes (0.85 → 1.45s)
+    tl.to(v, { glowLevel: 1, duration: 0.60, ease: "power2.out" }, 0.85);
 
-    // Phase 4 — Subtle zoom breathe — N swells then settles (1.1 → 2.2s)
-    tl.to(v, { zoom: 1.045, duration: 0.65, ease: "power2.out"   }, 1.10);
-    tl.to(v, { zoom: 1.0,   duration: 0.50, ease: "power2.inOut" }, 1.75);
+    // Phase 4 — Single slow cinematic push-in, carries through the fade
+    tl.to(v, { zoom: 1.06, duration: 2.10, ease: "power1.inOut" }, 0.90);
 
-    // Glow pulses with the breathe
-    tl.to(v, { glowLevel: 0.65, duration: 0.45, ease: "power2.inOut" }, 1.55);
-    tl.to(v, { glowLevel: 0.92, duration: 0.30, ease: "power2.out"   }, 2.00);
-
-    // Phase 5 — Fade to black (2.35 → 3.05s)
-    tl.to(v, { fadeOut: 1, duration: 0.70, ease: "power2.in" }, 2.35);
+    // Phase 5 — Fade to black (2.10 → 2.80s)
+    tl.to(v, { fadeOut: 1, duration: 0.70, ease: "power2.in" }, 2.10);
 
     return () => { done = true; tl.kill(); cancelAnimationFrame(raf); };
   }, [router]);
